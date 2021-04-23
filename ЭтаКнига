@@ -1,0 +1,102 @@
+Private Sub Workbook_Open()
+
+'Отключить поиска ошибочных ссылок
+Remove_MISSING
+
+    'Получить размер экрана
+    ActiveWindow.WindowState = xlMaximized
+    windWidth = Application.ActiveWindow.Width
+    windHeight = Application.ActiveWindow.Height
+    ActiveWindow.Zoom = 85
+    'Загрузить заставку
+    Dim pict As Shape
+    Set pict = ActiveSheet.Shapes("Рисунок 1")
+    pict.Left = 0
+    pict.Height = 0
+    pict.Height = ActiveWindow.VisibleRange.Height
+    pict.Width = ActiveWindow.VisibleRange.Width
+    ActiveSheet.Shapes("Рисунок 1").Visible = True
+
+ Sheets(1).CommandButton1.Enabled = False
+ Sheets(1).CommandButton2.Enabled = False
+ Sheets(1).CommandButton3.Enabled = False
+ Sheets(1).CommandButton5.Enabled = False
+
+ ThisWorkbook.Sheets("Сводные РМ").ScrollArea = "A1:A1"
+ Range("A1").Select
+ 
+'Деактивировать ползунки прокрутки
+With ActiveWindow
+    .DisplayHorizontalScrollBar = False
+    .DisplayVerticalScrollBar = False
+End With
+    
+ActiveSheet.Shapes.Range(Array("CommandButton3")).Select
+Selection.Placement = xlMove
+ActiveSheet.Shapes.Range(Array("CommandButton4")).Select
+Selection.Placement = xlMove
+ActiveSheet.Shapes.Range(Array("CommandButton5")).Select
+Selection.Placement = xlMove
+    
+'Инициализация кнопок
+Set btn1 = ActiveSheet.CommandButton1
+Set btn2 = ActiveSheet.CommandButton2
+Set btn3 = ActiveSheet.CommandButton3
+Set btn4 = ActiveSheet.CommandButton4
+Set btn5 = ActiveSheet.CommandButton5
+Refresh_BUTTONS
+
+'Установить размер шрифта для оглавлений кнопок
+ActiveSheet.Shapes("CommandButton5").DrawingObject.Object.Font.Size = 12
+ActiveSheet.Shapes("CommandButton4").DrawingObject.Object.Font.Size = 16
+ActiveSheet.Shapes("CommandButton3").DrawingObject.Object.Font.Size = 12
+ActiveSheet.Shapes("CommandButton2").DrawingObject.Object.Font.Size = 12
+ActiveSheet.Shapes("CommandButton1").DrawingObject.Object.Font.Size = 12
+
+'Защитить лист
+ActiveSheet.Protect Scenarios:=False, Password:="q159753", DrawingObjects:=True, Contents:=False, UserInterfaceOnly:=True
+
+ActiveSheet.Cells(1, 13).Clear
+'Убрать все фильтры
+Cells(2, 2).Select
+On Error Resume Next
+ActiveSheet.ShowAllData
+
+'Обновить запрос Power Query
+Dim bRfresh As Boolean
+With ThisWorkbook.Connections("Запрос — getPmData").OLEDBConnection
+         bRfresh = .BackgroundQuery
+        .BackgroundQuery = False
+        .Refresh
+        .BackgroundQuery = bRfresh
+End With
+
+'Активировать кнопку фомирования отчета
+Sheets(1).CommandButton2.Enabled = True
+
+    'Скрыть загруженные данные
+    Range("getPmData[#All]").Select
+        With Selection.Font
+        .ColorIndex = 2
+        .TintAndShade = 0
+    End With
+    
+    'Косметические доработки
+    Selection.Borders.LineStyle = False
+    ActiveSheet.ListObjects("getPmData").TableStyle = ""
+    Range("A1").Select
+    Refresh_BUTTONS
+End Sub
+
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+Sheets(1).CommandButton2.Enabled = False
+Application.DisplayAlerts = False
+Excel.Application.Quit
+End Sub
+
+'Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean)
+'If Лист2.Range("A1") <> 112233 Then
+ '   Cancel = 1
+  '  MsgBox "А вот не буду сохранять! Надоело!"
+'End If
+'End Sub
