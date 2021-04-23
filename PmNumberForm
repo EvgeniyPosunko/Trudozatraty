@@ -1,0 +1,131 @@
+Option Explicit
+Private Declare PtrSafe Function FindWindow Lib "user32" Alias "FindWindowA" _
+    (ByVal lpClassName As String, ByVal lpWindowName As String) As Long
+
+Private Declare PtrSafe Function GetWindowLong Lib "user32" Alias "GetWindowLongA" _
+    (ByVal hwnd As Long, ByVal nIndex As Long) As Long
+    
+Private Declare PtrSafe Function SetWindowLong Lib "user32" Alias "SetWindowLongA" _
+    (ByVal hwnd As Long, ByVal nIndex As Long, ByVal dwNewLong As Long) As Long
+    
+Private Declare PtrSafe Function DrawMenuBar Lib "user32" (ByVal hwnd As Long) As Long
+
+Private Const GWL_STYLE As Long = (-16)
+
+Private Sub Frame1_Click()
+
+End Sub
+
+Private Sub UserForm_Initialize()
+'Инициализация формы для заполнения номера РМ ордера
+Dim frm As Long
+Dim wHandle As Long
+wHandle = FindWindow(vbNullString, Me.Caption)
+frm = GetWindowLong(wHandle, GWL_STYLE)
+SetWindowLong wHandle, -16, 0
+DrawMenuBar wHandle
+End Sub
+
+Private Sub CommandButton3_Click()
+
+'Проверка на заполненость поля ввода номера РМ ордера
+If Trim(TextBox1.Value & vbNullString) = vbNullString Then
+MsgBox "Введите номер РМ ордера."
+Else
+Cells(2, 2).Select
+On Error Resume Next
+ActiveSheet.ShowAllData
+Dim PmNumber As String
+PmNumber = TextBox1.Value
+
+'Создать массив с номерами РМ ордеров
+Dim arrayPMnumbers As Variant
+
+Dim myRange As Range
+Dim counter As Integer
+Dim ArrayLen As Integer
+Dim lLastRow As Integer
+lLastRow = Cells(Rows.Count, 2).End(xlUp).Row 'найти последнюю заполненную строку
+
+For Each myRange In Range("B2", "B" & lLastRow)
+'ReDim arrayPMnumbers(counter To counter + 1) As Variant
+arrayPMnumbers(counter) = myRange.Value
+Debug.Print arrayPMnumbers(counter)
+counter = counter + 1
+Next myRange
+
+'Установка фильтра по двум критериям
+ActiveSheet.ListObjects("getPmData").Range.AutoFilter Field:=1, Criteria1:="=-" _
+        , Operator:=xlOr, Criteria2:=PmNumber
+
+'Проход циклом по отфильтрованным ячейкам
+Dim rangeColumnR As Range
+Dim rangeWeekSum As Range
+Dim arrColumnR As Variant
+Dim arrWeekSum As Variant
+Dim step As Integer
+Dim mySume As Integer
+Dim mySume2 As Integer
+ReDim arrColumnR(0 To 1) As Variant
+
+'Добавить номера строк отфильтрованный ячеек в массив
+For Each rangeColumnR In Range("L3", Cells(Rows.Count, "L").End(xlUp)).SpecialCells(xlCellTypeVisible)
+arrColumnR(step) = rangeColumnR.Row
+step = step + 1
+ReDim Preserve arrColumnR(0 To step)
+Next rangeColumnR
+
+'Проверить есть ли РМ ордер с списке
+If step <= 18 Then
+
+'Убрать все фильтры
+ActiveSheet.Cells(1, 13).Clear
+Cells(2, 2).Select
+On Error Resume Next
+ActiveSheet.ShowAllData
+ TextBox1.Value = ""
+ TextBox1.SetFocus
+MsgBox "Такого РМ ордера нет в базе"
+Refresh_BUTTONS
+Unload Me
+Sheets("Сводные РМ").Select
+Exit Sub
+End If
+'Обнулить счётчик
+step = 0
+ActiveSheet.Cells(1, 13).Select
+
+'Оставить не пустые строки + одну строку выше в колонке M (скрывает даты не содержащие человеко- часы)
+For Each rangeWeekSum In Range("M3", Cells(Rows.Count, "M").End(xlUp)).SpecialCells(xlCellTypeVisible)
+If Not IsEmpty(rangeWeekSum) Then
+rangeWeekSum.EntireRow.Hidden = False
+If step > 0 Then Worksheets("Сводные РМ").Rows(arrColumnR(step - 1)).EntireRow.Hidden = False
+
+'Суммировать Итого под РМ ордеру и записать в ячейку М1
+mySume2 = rangeWeekSum.Value
+mySume = mySume + mySume2
+    With Selection.Font
+        .Name = "Times New Roman"
+        .Size = 16
+    End With
+    Selection.HorizontalAlignment = xlRight
+Selection.Formula = "=CONCATENATE(""Итого по РМ ордеру: "",""" & mySume & ""","" чел/час. "")"
+Else:
+rangeWeekSum.EntireRow.Hidden = True
+End If
+step = step + 1
+Next rangeWeekSum
+End If
+ActiveSheet.Cells(2, 13).Select
+Refresh_BUTTONS
+Unload Me
+Sheets("Сводные РМ").Select
+End Sub
+
+Private Sub CommandButton4_Click()
+'Нажатие кнопки отмена
+Unload Me
+Sheets("Сводные РМ").Select
+End Sub
+
+
