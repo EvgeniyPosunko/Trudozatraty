@@ -1,0 +1,181 @@
+Dim lLastRow As Integer
+Public btn1 As MSForms.CommandButton
+Public btn2 As MSForms.CommandButton
+Public btn3 As MSForms.CommandButton
+Public btn4 As MSForms.CommandButton
+Public btn5 As MSForms.CommandButton
+
+Sub ФорматироватьДатыИЧеловекочасы()
+'
+' Проставить вормат Дадам - "Дата", человеко-часам - "Общий" формат, "-" для фильтра по двум критерим
+
+ThisWorkbook.Sheets("Сводные РМ").ScrollArea = ""
+'Убрать все фильтры
+Cells(2, 2).Select
+On Error Resume Next
+ActiveSheet.ShowAllData
+
+    ActiveSheet.Shapes.Range(Array("CommandButton3")).Select
+    Selection.Placement = xlFreeFloating
+    ActiveSheet.Shapes.Range(Array("CommandButton4")).Select
+    Selection.Placement = xlFreeFloating
+    ActiveSheet.Shapes.Range(Array("CommandButton5")).Select
+    Selection.Placement = xlFreeFloating
+
+'Активировать ползунки прокрутки
+With ActiveWindow
+    .DisplayHorizontalScrollBar = True
+    .DisplayVerticalScrollBar = True
+End With
+
+'Активировать нкопки управления
+With Sheets(1)
+ .CommandButton2.Enabled = False
+ .CommandButton1.Enabled = True
+ .CommandButton3.Enabled = True
+ .CommandButton5.Enabled = True
+End With
+
+Application.ScreenUpdating = False ' отключить обновление экрана
+
+    lLastRow = Cells(Rows.Count, 2).End(xlUp).Row 'найти последнюю заполненную строку
+    Dim pi As New ProgressIndicator   ' создать новый прогресс-бар
+    pi.Show "Форматирование ячеек"    ' отобразить индикатор
+    pi.StartNewAction 0, 100, "Форматирование дат и человеко-часов...", , , lLastRow ' Запуск шкалы прогресса
+
+    'Найти и присвоить ячейкам с датами формат "Дата", ячейкам с человекочасами формат- "Общий"
+    For counter = 2 To lLastRow
+    Set curCell = Worksheets("Сводные РМ").Cells(counter, 2)
+    
+    'Если текущая ячейка (проход по столбцу B) пустая
+    If IsEmpty(curCell) Then
+    curCell.Formula = "=IF(R[1]C[4]=""ФАКТ"",""-"","""")"
+    Else:
+    'Иначе суммировать человеко-часы за неделю
+    weekSum = WorksheetFunction.Sum(Range(Cells(counter, 6), Cells(counter, 12)))
+    Cells(counter, 13) = weekSum
+    End If
+
+    'Применить формат "Общий" к ячейкам с человеко-часами
+    Range(Cells(counter, 5), Cells(counter, 12)).Select
+    Selection.NumberFormat = "General"
+    
+    Set curCell = Worksheets("Сводные РМ").Cells(counter, 2)
+    If curCell = "-" Then Range(Cells(counter, 5), Cells(counter, 12)).Select
+    If curCell = "-" Then
+    Selection.NumberFormat = "m/d/yyyy"
+    ' инициировать очередное действие в индикаторе, передать занчение Counter
+    pi.SubAction , "", "$time", counter
+    End If
+    Next counter
+    
+    pi.Hide ' закрыть индикатор
+    Columns("M:M").Select
+    Selection.NumberFormat = "0.00"
+    
+    'Выровнять ширину ячеек с датами
+    Range("F:L").ColumnWidth = 10
+    Range("M:M").ColumnWidth = 14
+    Range("E:E").ColumnWidth = 75
+    Range("D:D").ColumnWidth = 15
+    Range("C:C").ColumnWidth = 23
+    Range("B:B").ColumnWidth = 9
+    Range("M:M").Font.Bold = True
+    Range("M:M").NumberFormat = "General"
+    Range([B2], "M" & lLastRow).Borders.LineStyle = True
+    
+    'Присвоить имена стобцам
+    Cells(2, 2) = "№ РМ"
+    Cells(2, 3) = "Объект, где производится работа"
+    Cells(2, 4) = "Заказчик Ф.И.О."
+    Cells(2, 5) = "Название РМ ордера"
+    Cells(2, 6) = "ПН"
+    Cells(2, 7) = "ВТ"
+    Cells(2, 8) = "СР"
+    Cells(2, 9) = "ЧТ"
+    Cells(2, 10) = "ПТ"
+    Cells(2, 11) = "СБ"
+    Cells(2, 12) = "ВС"
+    Cells(2, 13) = "Сумма"
+   
+    'Сгруппировать и спрятать данные об исполнителе и статусе выполнения работ
+    Columns("N:P").Select
+    If ActiveSheet.Columns("N:P").OutlineLevel < 2 Then
+    Columns("N:P").Group
+    ActiveSheet.Outline.ShowLevels RowLevels:=0, ColumnLevels:=1
+    End If
+    ActiveSheet.Outline.ShowLevels RowLevels:=0, ColumnLevels:=1
+    Application.Goto Range("A1")
+    
+    Application.ScreenUpdating = True ' включить обратно обновление экрана
+    ActiveSheet.Shapes("Рисунок 1").Visible = False
+    Sheets(1).CommandButton2.Enabled = False
+    Refresh_BUTTONS
+    
+    'Отобразить данные в таблице
+    ActiveSheet.ListObjects("getPmData").TableStyle = "TableStyleMedium4"
+    Range("getPmData[#All]").Select
+    Selection.Font.ThemeColor = xlThemeColorLight1
+    Selection.Borders.LineStyle = True
+    
+    ActiveSheet.Shapes.Range(Array("CommandButton3")).Select
+    Selection.Placement = xlMove
+    ActiveSheet.Shapes.Range(Array("CommandButton4")).Select
+    Selection.Placement = xlMove
+    ActiveSheet.Shapes.Range(Array("CommandButton5")).Select
+    Selection.Placement = xlMove
+    Range("A1").Select
+End Sub
+
+Sub Remove_MISSING()
+    Dim oReferences As Object, oRef As Object
+    Set oReferences = ThisWorkbook.VBProject.References
+    For Each oRef In oReferences
+        If (oRef.IsBroken) Then oReferences.Remove Reference:=oRef
+    Next
+End Sub
+
+Sub Refresh_BUTTONS()
+'Инициализация кнопок
+btn1.Height = 50
+btn1.Width = 155
+btn1.Top = 45
+btn1.Left = 0
+btn1.Caption = "     Найти РМ ордер  "
+btn1.Font = "calibri"
+
+btn2.Height = 50
+btn2.Width = 155
+btn2.Top = 115
+btn2.Left = 0
+btn2.Caption = "Сформировать отчет"
+btn2.Font = "calibri"
+
+btn3.Height = 50
+btn3.Width = 155
+btn3.Top = 185
+btn3.Left = 0
+btn3.Caption = "Убрать все фильтры "
+btn3.Font = "calibri"
+
+btn4.Height = 50
+btn4.Width = 155
+btn4.Top = 460
+btn4.Left = 0
+btn4.Caption = "  Выход             "
+btn4.Font = "calibri"
+
+btn5.Height = 50
+btn5.Width = 155
+btn5.Top = 255
+btn5.Left = 0
+btn5.Caption = "  Печать                   "
+btn5.Font = "calibri"
+Set btn5 = ActiveSheet.CommandButton5
+
+ActiveSheet.Shapes("CommandButton5").DrawingObject.Object.Font.Size = 12
+ActiveSheet.Shapes("CommandButton4").DrawingObject.Object.Font.Size = 16
+ActiveSheet.Shapes("CommandButton3").DrawingObject.Object.Font.Size = 12
+ActiveSheet.Shapes("CommandButton2").DrawingObject.Object.Font.Size = 12
+ActiveSheet.Shapes("CommandButton1").DrawingObject.Object.Font.Size = 12
+End Sub
