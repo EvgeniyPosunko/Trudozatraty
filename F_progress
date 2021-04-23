@@ -1,0 +1,9 @@
+Private Sub CommandButton_stop_Click()
+    End    ' остановка всех макросов
+End Sub
+
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    If CloseMode = 0 Then 'CloseMode = 0 - попытка закрыть форму крестиком
+        Cancel = True 'отмена закрытие формы
+    End If
+End Sub
