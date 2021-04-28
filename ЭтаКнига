@@ -93,10 +93,3 @@ Sheets(1).CommandButton2.Enabled = False
 Application.DisplayAlerts = False
 Excel.Application.Quit
 End Sub
-
-'Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean)
-'If Лист2.Range("A1") <> 112233 Then
- '   Cancel = 1
-  '  MsgBox "А вот не буду сохранять! Надоело!"
-'End If
-'End Sub
