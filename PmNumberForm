@@ -76,7 +76,7 @@ ReDim Preserve arrColumnR(0 To step)
 Next rangeColumnR
 
 'Проверить есть ли РМ ордер с списке
-If step <= 18 Then
+If step < 18 Then
 
 'Убрать все фильтры
 ActiveSheet.Cells(1, 13).Clear
